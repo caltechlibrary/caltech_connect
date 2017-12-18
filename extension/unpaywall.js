@@ -681,6 +681,8 @@ function run() {
         if (searchResults){
             insertIframe(searchResults.color, searchResults.url)
             clearInterval(resultsChecker) // stop polling
+        } else {
+            insertIframe('orange','https://clsproxy.library.caltech.edu/login?url=http://resolver.ebscohost.com/openurl?sid=EBSCO:mdc&id=DOI:'+doi)
         }
     }, 250)
 }
