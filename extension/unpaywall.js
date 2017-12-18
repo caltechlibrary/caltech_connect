@@ -104,10 +104,16 @@ function getSearchResults(){
     }
 
     if (searchesAreAllDone()){
+        if(res.url == null){
+            return {
+                color: 'orange',
+                url: 'https://clsproxy.library.caltech.edu/login?url=http://resolver.ebscohost.com/openurl?sid=EBSCO:mdc&id=DOI:'+doi
+            }
+        } else {
         return {
             color: decideTabColor(res),
             url: res.url
-        }
+        } }
     }
 
     return null
@@ -681,8 +687,6 @@ function run() {
         if (searchResults){
             insertIframe(searchResults.color, searchResults.url)
             clearInterval(resultsChecker) // stop polling
-        } else {
-            insertIframe('orange','https://clsproxy.library.caltech.edu/login?url=http://resolver.ebscohost.com/openurl?sid=EBSCO:mdc&id=DOI:'+doi)
         }
     }, 250)
 }
