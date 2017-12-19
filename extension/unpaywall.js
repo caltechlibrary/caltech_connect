@@ -107,7 +107,7 @@ function getSearchResults(){
         if(res.url == null){
             return {
                 color: 'orange',
-                url: 'https://clsproxy.library.caltech.edu/login?url=http://resolver.ebscohost.com/openurl?sid=EBSCO:mdc&id=DOI:'+doi
+                url: 'https://clsproxy.library.caltech.edu/login?url=http://resolver.ebscohost.com/openurl?id=DOI:'+doi
             }
         } else {
         return {
