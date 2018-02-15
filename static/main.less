@@ -69,10 +69,19 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 10px;
-    a {
-      color: #999;
-      font-size: 16px;
-      padding: 5px 20px;
+    .links {
+      ul {
+        margin: 0;
+        li {
+          list-style-type: none;
+          display: inline;
+          a {
+            color: #999;
+            font-size: 16px;
+            padding: 5px 20px;
+          }
+        }
+      }
     }
   }
 }
@@ -80,6 +89,8 @@ body {
 
 .page {
   width: 100%;
+  font-size: 18px;
+  line-height: 1.4;
   h1 {
     font-weight: 300;
     margin-bottom: 10px;
@@ -93,9 +104,136 @@ body {
 
 .page.faq {  // there is more faq stuff below. fix later.
   padding-top: 100px;
-  line-height: 1.4;
-  font-size: 20px;
 }
+
+.page.access {
+
+}
+.page.check-dois {
+  .about {
+    margin-bottom: 50px;
+  }
+  .input {
+    .form-row {
+      margin: 30px;
+      &.email {
+        margin-top: 40px;
+      }
+    }
+
+    label {
+      color: #999;
+      font-size: 18px;
+    }
+    textarea {
+      width: 100%;
+      font-family: 'Monaco', monospace;
+      font-size: 12px;
+      border: 1px solid #ccc;
+    }
+
+
+    #submit {
+      float:right;
+      font-size: 20px;
+      padding: 10px 20px;
+
+    }
+  }
+}
+
+.page.data {
+  ul {
+    li {
+      margin: 20px 0;
+    }
+  }
+}
+
+
+.page.sources {
+  padding-top: 100px;
+  h1 {
+    display: flex;
+    justify-content: space-between;
+  }
+  .main {
+    margin-top: 70px;
+    margin-bottom: 70px;
+    form {
+      .input-row {
+        display: flex;
+        md-input-container {
+          width: 100%;
+        }
+        md-progress-circular {
+          margin-top: 20px;
+        }
+      }
+    }
+
+    .search-results {
+      opacity: 1;
+      transition: opacity .3s ease-in-out;
+      &.waiting-true {
+        opacity: .1;
+      }
+
+      .num-results {
+        padding: 0;
+        margin: 0 10px;
+
+      }
+      .result {
+        padding: 10px 10px;
+        margin: 10px 0;
+        border-bottom: 1px solid #eee;
+        &.waiting-true {
+          opacity: .3;
+        }
+
+        .name {
+          font-size: 18px;
+          a {
+            font-size: 80%;
+            margin-left: 5px;
+            color: #333;
+
+          }
+        }
+        .host {
+          font-size: 14px;
+        }
+      }
+
+      .truncated {
+        margin: 10px 10px 50px;
+        padding: 10px 0;
+        display: flex;
+        align-items: center;
+        .icon {
+          margin-right: 10px;
+          font-size: 30px;
+        }
+        .msg {
+          h3 {
+            font-weight: bold;
+            font-size: 18px;
+            margin: 5px 0;
+          }
+          .extra-msg {
+            font-size: 14px;
+          }
+        }
+    }
+
+
+
+    }
+
+  }
+}
+
 
 .page.welcome {
   padding-top: 150px;
@@ -355,7 +493,7 @@ div.page.landing {
     justify-content: center;
     padding: 100px 0;
     h2 {
-      font-size: 32px;
+      font-size: 26px;
       font-weight: bold;
     }
 
@@ -383,7 +521,7 @@ div.page.landing {
       justify-content: center;
       //margin: 0 auto;
       margin: 0 10%;
-      font-size: 20px;
+      font-size: 16spx;
       line-height: 1.3;
     }
 
@@ -391,7 +529,7 @@ div.page.landing {
 
   .testimonials-section {
     //background: #eee;
-    padding: 50px 0 100px;
+    padding: 50px 0 0;
     .testimonials-header {
       padding: 50px 0 20px;
       h2 {
@@ -437,6 +575,8 @@ div.page.landing {
     }
   }
 }
+
+
 
 
 #faq {
@@ -508,47 +648,42 @@ div.footer {
   //    );
 
   background: @baseColor;
+  background: #333;
 
 
   padding: 50px 20px;
-  //margin-top: 150px;
+  margin-top: 150px;
   color: #fff;
   .content {
     max-width: 900px;
     margin: 0 auto;
+    font-size: 18px;
+    line-height: 1.3;
     a {
       color: #fff;
       &:hover {
         text-decoration: underline;
       }
     }
-    .links {
-      font-size: 26px;
-      text-align: right;
-      margin-bottom: 50px;
-      a {
-        margin: 0 20px 0 0;
-        display: block;
-        float: left;
-        padding-bottom: 10px;
-        @media @xs {
-          float: left;
-        }
-        i {
-          //display: none;
+    ul.menu-links {
+      margin: 0;
+      line-height: 1.5;
+      li {
+        list-style-type: none;
+        a {
         }
       }
     }
-    .logo {
-      text-align: center;
-      img {
-        width: 28px;
-      }
-    }
+
     .credit {
-      font-size: 16px;
-      line-height: 1.4;
-      text-align: right;
+      line-height: 1.1;
+      span.built-by {
+        display:block;
+      }
+      span.funders {
+        font-size: 14px;
+      }
+
       @media @xs {
         text-align: left;
       }
