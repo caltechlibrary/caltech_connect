@@ -18,7 +18,7 @@ document.getElementById("homepage").addEventListener("click",
 
 document.getElementById("example").addEventListener("click",
     function(){
-        browser.tabs.create({url: "http://unpaywall.org/welcome"})
+        browser.tabs.create({url: "http://library.caltech.edu"})
     }
 )
 

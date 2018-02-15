@@ -6,7 +6,7 @@ var logUrl = "http://unpaywall.org/log/install";
 
 
 function showWelcomePage(){
-    browser.tabs.create({url: "http://unpaywall.org/welcome"}, function (tab) {});
+    browser.tabs.create({url: "http://library.caltech.edu"}, function (tab) {});
 }
 
 function checkToShowWelcomePage(){
