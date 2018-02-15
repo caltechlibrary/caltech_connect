@@ -1,15 +1,15 @@
 {
   "name": "Caltech Connect",
   "version": "0.1",
-  "version_name": "Caltech Connect 0.1",
+  "version_name": "0.1",
   "manifest_version": 2,
   "description": "Find open-access versions of research papers and access Caltech Library licensed content.",
   "icons": {
-    "16": "img/icon-16.png",
-    "32": "img/icon-32.png",
-    "48": "img/icon-48.png",
-    "64": "img/icon-64.png",
-    "128": "img/icon-128.png"
+    "16": "img/caltech-orange.png",
+    "32": "img/caltech-orange.png",
+    "48": "img/caltech-orange.png",
+    "64": "img/caltech-orange.png",
+    "128": "img/caltech-orange.png"
   },
   "applications": {
     "gecko": {
@@ -17,7 +17,7 @@
     }
   },
   "browser_action": {
-    "default_icon": "img/icon-16.png",
+    "default_icon": "img/caltech-orange.png",
     "default_title": "Caltech Connect",
     "default_popup": "popup.html"
   },
