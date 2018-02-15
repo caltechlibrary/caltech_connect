@@ -52,9 +52,31 @@ def index_endpoint(path="index", page=""):
     )
 
 
-@app.route("/log/install", methods=["POST"])
+def show_welcome_screen(ip):
+    blacklist = [
+        "129.107.37.",
+        "129.107.73.",
+        "129.107.72.",
+        "129.107.67.",
+        "129.107.76."
+     ]
+
+    for blacklisted_ip in blacklist:
+        if ip.startswith(blacklisted_ip):
+            return False
+
+    return True
+
+@app.route("/log/install", methods=["POST", "GET"])
 def log_install():
-    return jsonify({"installed": True})
+
+    ip = request.remote_addr
+    return jsonify(
+        {
+            "show_welcome_screen": show_welcome_screen(ip),
+            "ip": ip
+        }
+    )
 
 
 if __name__ == "__main__":

@@ -26,12 +26,55 @@ angular.module('landing', [
 
     .config(function ($routeProvider) {
         $routeProvider.when('/faq', {
-            templateUrl: "faq.tpl.html",
-            controller: "FaqPageCtrl"
+            templateUrl: "faq.tpl.html"
         })
     })
 
 
+    .config(function ($routeProvider) {
+        $routeProvider.when('/sources', {
+            templateUrl: "sources.tpl.html",
+            controller: "SourcesPageCtrl"
+        })
+    })
+
+
+    .config(function ($routeProvider) {
+        $routeProvider.when('/data', {
+            templateUrl: "data.tpl.html",
+            controller: "DataPageCtrl"
+        })
+    })
+
+    .config(function ($routeProvider) {
+        $routeProvider.when('/dataset', {
+            templateUrl: "dataset.tpl.html"
+        })
+    })
+
+    .config(function ($routeProvider) {
+        $routeProvider.when('/sla', {
+            templateUrl: "sla.tpl.html"
+        })
+    })
+
+    .config(function ($routeProvider) {
+        $routeProvider.when('/check-dois', {
+            templateUrl: "check-dois.tpl.html",
+            controller: "CheckDoisCtrl"
+        })
+    })
+
+    .config(function ($routeProvider) {
+        $routeProvider.when('/api', {
+            redirectTo: "/api/v2"
+        })
+    })
+    .config(function ($routeProvider) {
+        $routeProvider.when('/api/v2', {
+            templateUrl: "api-v2.tpl.html"
+        })
+    })
 
 
 
@@ -46,11 +89,146 @@ angular.module('landing', [
         console.log("PageNotFound controller is running!")
 
     })
-    .controller("FaqPageCtrl", function($scope, $anchorScroll){
-        console.log("FaqPageCtrl controller is running!")
+
+    .controller("CheckDoisCtrl", function($scope, $http, $timeout, $anchorScroll){
+        console.log("CheckDoisCtrl controller is running!")
+        window.scrollTo(0,0)
+
+        $scope.input = {}
+        $scope.input.state = "ready"
+
+
+        $scope.submit = function(){
+            $scope.input.state = "working"
+            var url = "https://api.unpaywall.org/v2/dois"
+            var data = {
+                dois: getDois(),
+                email: $scope.input.email
+            }
+            console.log("submit!", data)
+            $http.post(url, data)
+                .then(
+                function(resp){
+                    console.log("success response", resp)
+                    $scope.input.state = "success"
+                },
+                function(resp){
+                    console.log("fail response", resp)
+                    $scope.input.state = "error"
+                }
+            )
+
+
+
+
+
+
+        }
+        $scope.getDois = getDois
+
+        function getDois(){
+            var inputStr = ""
+            if ($scope.input.dois){
+                inputStr = $scope.input.dois
+            }
+            var dois = inputStr.split(/\r?\n/)
+            var sliced = dois.slice(0, 10000) // first 10k
+            var noEmptyStrings = sliced.filter(function(n){return n})
+            return noEmptyStrings
+        }
+
 
 
     })
+
+    .controller("DataPageCtrl", function($scope, $anchorScroll){
+        console.log("DataPageCtrl controller is running!")
+    })
+    .controller("SourcesPageCtrl", function($scope, $http, $timeout, $interval){
+        console.log("SourcesPageCtrl controller is running!")
+
+        var myInput = document.getElementById('search-input')
+        var myTimeout
+        var userIsTyping = false
+        myInput.onkeydown = function(e){
+            console.log("key up")
+            userIsTyping = true
+
+            $timeout.cancel(myTimeout)
+            myTimeout = $timeout(function(){
+                userIsTyping = false
+            }, 300)
+
+        }
+
+        var searchInfo = {
+            lastTerm: "",
+            waiting: false,
+            numTruncated: 0,
+            results: []
+        }
+
+        function resetSearch(){
+            searchInfo.lastTerm = ""
+            searchInfo.waiting = false
+            searchInfo.numTruncated = 0
+            searchInfo.results.length = 0
+        }
+
+
+        function search(){
+            var term = $scope.searchTerm
+
+            if (searchInfo.waiting){
+                return
+            }
+            if (userIsTyping){
+                return
+            }
+            if (term == searchInfo.lastTerm){
+                return
+            }
+            if (!term || term.length < 4){
+                resetSearch()
+                return
+            }
+
+            // we've got a new term to search, and no search is ongoing. go!
+            console.log("doing repository search:", term)
+            searchInfo.waiting = true
+            var url = "http://api.oadoi.org/data/sources/" + term
+
+            $http.get(url)
+                .success(function(resp){
+                    console.log("repositories search return", resp)
+
+                    searchInfo.lastTerm = term
+                    searchInfo.waiting = false
+                    searchInfo.numTruncated = 0
+                    var results = resp.results
+
+                    if (results.length > 50){
+                        searchInfo.numTruncated = results.length - 25
+                        results.length = 50
+                    }
+                    searchInfo.results = results
+                })
+                .error(function(){
+                    resetSearch()
+                    searchInfo.lastTerm = term
+                })
+
+        }
+
+        // poll for changes in the search term
+        $interval(search, 100)
+        $scope.search = searchInfo
+        $scope.ui = {}
+
+
+    })
+
+
 
 
     .controller("WelcomePageCtrl", function($scope, $timeout){

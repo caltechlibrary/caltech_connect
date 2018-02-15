@@ -3,8 +3,10 @@ if (chrome){
     browser = chrome
 }
 
+
 var devLog = function(str, obj){
-    if (settings && settings.showOaColor){
+    // only log to console if we're in Chrome with Nerd Mode enabled.
+    if (settings && settings.showOaColor && navigator.userAgent.indexOf("Chrome") > -1){
         console.log("unpaywall: " + str, obj)
     }
 }
@@ -26,6 +28,7 @@ var docAsStr = document.documentElement.innerHTML;
 
 
 
+
 /***********************************************************************************
  *
  * Sources
@@ -38,10 +41,9 @@ function makeSourceObj(sourceName, sourceFn) {
         url: undefined,
         isStarted: false,
         isComplete: false,
-        color: undefined,
-        isPublisherHosted: undefined,
-        isOaJournal: undefined
+        color: "black"
     }
+
 
     return {
         results: results,
@@ -55,6 +57,18 @@ function makeSourceObj(sourceName, sourceFn) {
         run: function(){
             results.isStarted = true
             sourceFn(results)
+        },
+        getUrl: function(){
+            return results.url
+        },
+        isGold: function(){
+            return results.color == "gold"
+        },
+        isGreen: function(){
+            return results.color == "green"
+        },
+        isBronze: function(){
+            return results.color == "bronze"
         }
     }
 }
@@ -64,17 +78,6 @@ function makeSourceObj(sourceName, sourceFn) {
 function makeAllSources(){
     allSources.push(makeSourceObj("pdfLink", runPdfLink))
     allSources.push(makeSourceObj("oadoi", runOadoi))
-}
-
-
-function numSourcesStarted(){
-    var ret = 0
-    allSources.forEach(function(source){
-        if (source.isStarted()){
-            ret += 1
-        }
-    })
-    return ret
 }
 
 
@@ -91,32 +94,72 @@ function searchesAreAllDone(){
     return getSource("pdfLink").isComplete() && getSource("oadoi").isComplete()
 }
 
+function getBestOaUrl(){
+    if (!searchesAreAllDone()){
+        return null
+    }
+
+    // the local PDF url is best
+    if (getSource("pdfLink").results.url){
+        return getSource("pdfLink").getUrl()
+    }
+
+    // fallback to oaDOI url + Caltech link
+    return getSource("oadoi").getUrl()
+}
+
+function decideTabColor(){
+    if (!searchesAreAllDone()){
+        return null
+    }
+
+    var color = "orange"
+    if (getSource("oadoi").isGreen()){
+        color = "green"
+    }
+
+    if (getSource("pdfLink").getUrl()){
+        color = "bronze"
+    }
+    if (getSource("oadoi").isBronze()){
+        color = "bronze"
+    }
+
+    if (getSource("oadoi").isGold()){
+        color = "gold"
+    }
+
+    // if the user likes to dive into the nerdy details of what kind of OA is what,
+    // great, let's show em what we found.
+    if (settings.showOaColor){
+        return color
+    }
+
+    // but for most users, they just want to know if they can read it. for them,
+    // Green Means Go.
+    else {
+        if (color != "orange") {
+            return "green"
+        }
+        else {
+            return "orange"
+        }
+    }
+}
+
 
 function getSearchResults(){
     if (!searchesAreAllDone()){
         return null
     }
-    var res = getSource("oadoi").results
-
-    // the local PDF url overwrites the oaDOI URL
-    if (getSource("pdfLink").results.url){
-        res.url = getSource("pdfLink").results.url
+    var ret = {
+        url: getBestOaUrl(),
+        color: decideTabColor()
     }
+    devLog("unpaywall decision:", ret)
+    return ret
 
-    if (searchesAreAllDone()){
-        if(res.url == null){
-            return {
-                color: 'orange',
-                url: 'https://clsproxy.library.caltech.edu/login?url=http://resolver.ebscohost.com/openurl?id=DOI:'+doi
-            }
-        } else {
-        return {
-            color: decideTabColor(res),
-            url: res.url
-        } }
-    }
-
-    return null
+l
 }
 
 
@@ -137,10 +180,12 @@ function runPdfLink(resultObj){
     checkForPdf(pdfUrl).then(function(){
         resultObj.isComplete = true
         resultObj.url = pdfUrl
+        resultObj.color = "bronze"
         devLog("PDF check done. success! PDF link:", pdfUrl)
     }, function(err){
         devLog("PDF check done. failure. useless link: ", pdfUrl)
         resultObj.isComplete = true
+        resultObj.color = "black"
     });
 }
 
@@ -151,24 +196,52 @@ function runPdfLink(resultObj){
 
 
 function runOadoi(resultObj){
-    var url = "https://api.oadoi.org/v2/" + doi + "?email=unpaywall@impactstory.org"
+    var url = "https://api.oadoi.org/v2/" + doi + "?email=library@caltech.edu"
     devLog("doing oaDOI check", url)
 
 
-    $.getJSON(url, function(resp){
-        resultObj.isComplete = true
-        devLog("oaDOI returned", resp)
+    $.getJSON(url)
+        .done(function(resp){
+            devLog("oaDOI returned: ", resp)
+            resultObj.color = decideOadoiColor(resp)
+            if (resp.best_oa_location){
+                resultObj.url = resp.best_oa_location.url
+            }
+            else {
+                resultObj.url ='https://clsproxy.library.caltech.edu/login?url=http://resolver.ebscohost.com/openurl?id=DOI:'+doi
+            }
+        })
+        .fail(function(resp){
+            devLog("oaDOI call failed", resp)
+        })
+        .always(function(resp){
+            resultObj.isComplete = true
+        })
+}
 
-        // if it's got a best_oa_location it has a URL. cool, we'll return that in the
-        // results object.
-        if (resp.best_oa_location){
-            resultObj.url = resp.best_oa_location.url
-            resultObj.hostType = resp.best_oa_location.host_type
-            resultObj.isOaJournal = resp.journal_is_oa
-        }
+// note this is not the tab color, just oaDOI's opinion about
+// the oa color. tab color will need to use other data (pdfLink)
+function decideOadoiColor(oadoiResp){
+    if (!oadoiResp.best_oa_location){
+        return "black"
+    }
 
-    })
+    var color
 
+    // from oaDOI perspective, bronze is just everything that's not
+    // green or gold.
+    color = "bronze"
+
+    if (oadoiResp.best_oa_location.host_type == "repository") {
+        color = "green"
+    }
+
+    // gold always trumps green
+    if (oadoiResp.journal_is_in_doaj){
+        color = "gold"
+    }
+
+    return color
 }
 
 
@@ -185,39 +258,6 @@ function getSource(sourceName){
 
 
 
-function decideTabColor(myResults){
-
-    var color = "black"
-
-    if (myResults.url){
-        color = "bronze"
-    }
-
-    if (myResults.hostType == "repository") {
-        color = "green"
-    }
-    else if (myResults.isOaJournal){
-        color = "gold"
-    }
-
-    // if the user likes to dive into the nerdy details of what kind of OA is what,
-    // great, let's show em what we found.
-    if (settings.showOaColor){
-        return color
-    }
-
-    // but for most users, they just want to know if they can read it. for them,
-    // Green Means Go.
-    else {
-        if (color != "black") {
-            return "green"
-        }
-        else {
-            return "black"
-        }
-    }
-
-}
 
 
 
@@ -283,6 +323,16 @@ function findDoiFromMetaTags(){
             return true // continue iterating
         }
 
+        // SAGE journals have weird meta tags with scheme="publisher-id"
+        // those DOIs have strange character replacements in them, so ignore.
+        // making universal rule cos i bet will help some other places too.
+        // eg:
+        //      http://journals.sagepub.com/doi/10.1207/s15327957pspr0203_4
+        //      http://journals.sagepub.com/doi/abs/10.1177/00034894991080S423
+        if (myMeta.scheme && myMeta.scheme != "doi") {
+            return true // continue iterating
+        }
+
         // content has to look like a  DOI.
         // much room for improvement here.
         var doiCandidate = myMeta.content.replace("doi:", "").trim()
@@ -295,10 +345,6 @@ function findDoiFromMetaTags(){
         return null
     }
     devLog("found a DOI from a meta tag", doi)
-
-    // some sage DOIs have an underscore where there should be a slash.
-    // eg: http://journals.sagepub.com/doi/10.1207/s15327957pspr0203_4
-    doi = doi.replace("10.1207_", "10.1207/")
 
     // all done.
     return doi
@@ -361,8 +407,6 @@ function findDoiFromNumber(){
 
 function findDoiFromPubmed(){
     // gold:   https://www.ncbi.nlm.nih.gov/pubmed/17375194
-
-    devLog("looking for pubmed doi")
 
     if (myHost.indexOf("www.ncbi.nlm.nih.gov") < 0) {
         return
@@ -506,7 +550,9 @@ function findPdfUrl(){
         pdfUrl = "http://ieeexplore.ieee.org" + ieeePdf + ".pdf"
     }
 
-    return pdfUrl
+    let absolutePdfUrl = getAbsoluteUrl(pdfUrl)
+    return absolutePdfUrl
+
 }
 
 
@@ -647,6 +693,17 @@ function reportInstallation(){
     }
 }
 
+// from https://davidwalsh.name/get-absolute-url
+var getAbsoluteUrl = (function() {
+	var a;
+
+	return function(url) {
+		if(!a) a = document.createElement('a');
+		a.href = url;
+
+		return a.href;
+	};
+})();
 
 
 
@@ -691,11 +748,39 @@ function run() {
     }, 250)
 }
 
+
+function runForPubmedSerp(){
+    // unfinished
+
+    devLog("runnning for pubmed serp")
+    if (myHost.indexOf("www.ncbi.nlm.nih.gov") < 0) {
+        return
+    }
+
+    $("div.rprt").each(function(i, searchResult){
+        devLog("pubmed result", searchResult)
+
+        var $res = $(searchResult)
+
+        var details = $res
+
+        var linkStr = "<a href='http://impactstory.org'>free via Unpaywall</a>"
+
+        $(searchResult).find("div.resc").append(linkStr)
+
+        devLog("new pubmed result", this)
+
+
+    })
+
+}
+
 function runWithSettings(){
     browser.storage.local.get(null, function(items){
         settings = items
         devLog("got settings", settings)
         run()
+        //runForPubmedSerp()
     });
 }
 
